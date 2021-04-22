@@ -1,10 +1,9 @@
-import { Container, Grid, hslToRgb, MenuItem, Select, styled, Typography, useTheme } from '@material-ui/core';
+import { Container, Grid, MenuItem, Select, Typography, useTheme } from '@material-ui/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { autoscaleOutputPlane, autoscaleSPlane } from './CanvasTransform';
 import TFInput from './TFInput';
-import {autoscaleOutputPlane, autoscaleSPlane} from './CanvasTransform';
-import { complexAdd, elementDiv, elementMult, evalTF, findRoots, mag} from './tf_math';
-import { arange, constrain, newLogBase, newYield } from './utils';
-import { blue } from '@material-ui/core/colors';
+import { complexAdd, elementDiv, elementMult, evalTF, findRoots, mag } from './tf_math';
+import { arange, newLogBase, newYield } from './utils';
 
 const axisSize = 32
 
@@ -197,6 +196,8 @@ function useAsyncBackgroundRender(canvasDim, inputPlotSize, inputPlotScale, colo
     setCancelRender(() => 
       asyncBackgroundRender(setBackground, canvasDim, inputPlotSize, inputPlotScale, colorer)
     )
+  // Render should not be canceled when cancelRender is updated
+  // eslint-disable-next-line
   }, [canvasDim, inputPlotSize, inputPlotScale, colorer])
 
   return background
@@ -247,6 +248,8 @@ function asyncBackgroundRender(setBackground, canvasDim, plotSize, plotScale, co
 function useRenderCanvas(...args) {
   useEffect(() => {
     renderCanvas(...args)
+  // eslint doesn't detect this properly
+  // eslint-disable-next-line
   }, [...args])
 }
 

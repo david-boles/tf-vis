@@ -1,4 +1,4 @@
-import {complexAdd, complexSubtract, elementDiv, elementMult, evalTF, scalarDiv, scalarMult, mag} from './tf_math'
+import { complexAdd, complexSubtract, elementDiv, elementMult, evalTF, scalarDiv, scalarMult } from './tf_math'
 import { arange } from './utils'
 
 class CanvasTransform {
