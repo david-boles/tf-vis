@@ -1,8 +1,8 @@
-import { Container, Grid, hslToRgb, styled, useTheme } from '@material-ui/core';
+import { Container, Grid, hslToRgb, MenuItem, Select, styled, Typography, useTheme } from '@material-ui/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TFInput from './TFInput';
 import {autoscaleOutputPlane, autoscaleSPlane} from './CanvasTransform';
-import { elementDiv, elementMult, evalTF, findRoots, mag} from './tf_math';
+import { complexAdd, elementDiv, elementMult, evalTF, findRoots, mag} from './tf_math';
 import { arange, constrain, newLogBase, newYield } from './utils';
 import { blue } from '@material-ui/core/colors';
 
@@ -29,16 +29,16 @@ function App() {
   const outputPlotScale = useMemo(() => autoscaleOutputPlane(outputPlotSize, tf), [outputPlotSize, tf])
 
 
-
+  const [coloringOffset, setColoringOffset] = useState(0)
 
   const outputColorer = useCallback((point) => {
+    point = complexAdd(point, [coloringOffset, 0])
     const scaled = elementDiv(elementMult(point, outputPlotScale.scale), outputPlotSize)
     const cmag = magColorScale(mag(scaled))
     const cangle = 180 + (Math.atan2(scaled[1], scaled[0]) * 180 / Math.PI)
-    // console.log('color', mag, angle)
     
     return hsl2rgba(cangle, 1, cmag)
-  }, [outputPlotScale.scale, outputPlotSize])
+  }, [outputPlotScale.scale, outputPlotSize, coloringOffset])
 
   const inputColorer = useCallback((point) => {
     if(tf) {
@@ -97,8 +97,8 @@ function App() {
   const inputBackground = useAsyncBackgroundRender(canvasDim, inputPlotSize, inputPlotScale, inputColorer)
   const outputBackground = useAsyncBackgroundRender(canvasDim, outputPlotSize, outputPlotScale, outputColorer)
 
-  useRenderCanvas(inputCanvas, canvasDim, inputPlotSize, inputPlotScale, {poles, zeros, background: inputBackground, hoverIn})
-  useRenderCanvas(outputCanvas, canvasDim, outputPlotSize, outputPlotScale, {background: outputBackground, hoverOut, nyquistPoints})
+  useRenderCanvas(inputCanvas, canvasDim, inputPlotSize, inputPlotScale, {poles, zeros, background: inputBackground, hoverIn, showComplexAxis: true})
+  useRenderCanvas(outputCanvas, canvasDim, outputPlotSize, outputPlotScale, {background: outputBackground, hoverOut, nyquistPoints, showMinus1: true})
 
 
   
@@ -119,21 +119,21 @@ function App() {
           </Grid>
         </Grid>
 
-        <Grid item style={{paddingTop: theme.spacing(4)}}>
-          Controls
-
-          <br/>
-          <br/>
-          <br/>
-          <br/>
-          wef
-          wfe
-          <br/>
-          <br/>
-          <br/>
-          <br/>
-
-          wef
+        <Grid item container spacing={2} style={{paddingTop: theme.spacing(4)}} alignItems='center'>
+          <Grid item>
+            <Typography variant="body1" component="span">Color by: </Typography>
+          </Grid>
+          <Grid item>
+            <Select
+              value={coloringOffset}
+              variant='outlined'
+              margin='dense'
+              onChange={({target: {value}}) => setColoringOffset(value)}
+            >
+              <MenuItem value={0}>G(<var>s</var>)</MenuItem>
+              <MenuItem value={1}>1 + G(<var>s</var>)</MenuItem>
+            </Select>
+          </Grid>
         </Grid>
       </Grid>
     </Container>
@@ -251,7 +251,7 @@ function useRenderCanvas(...args) {
 }
 
 function renderCanvas(canvasRef, canvasDim, plotSize, plotScale, toRender) {
-  const {zeros, poles, background, hoverIn, hoverOut, nyquistPoints} = Object.assign({
+  const {zeros, poles, background, hoverIn, hoverOut, nyquistPoints, showMinus1, showComplexAxis} = Object.assign({
     zeros: [],
     poles: []
   }, toRender)
@@ -266,6 +266,39 @@ function renderCanvas(canvasRef, canvasDim, plotSize, plotScale, toRender) {
     // --- Background Coloring ---
     if(background) {
       ctx.putImageData(background, 0, 0)
+    }
+
+    if(showComplexAxis) {
+      const zero = toCanvas([0, 0])[0]
+      ctx.strokeStyle='black'
+      ctx.beginPath()
+      ctx.moveTo(zero, 0)
+      ctx.lineTo(zero, plotSize[1])
+      ctx.stroke()
+    }
+
+    if(showMinus1) {
+      const [x, y] = toCanvas([-1, 0])
+      ctx.strokeStyle = 'white';
+      ctx.fillStyle = 'red';
+      const inner = 1
+      const outer = 4
+      ctx.beginPath()
+      ctx.moveTo(x+inner, y-outer)
+      ctx.lineTo(x+inner, y-inner)
+      ctx.lineTo(x+outer, y-inner)
+      ctx.lineTo(x+outer, y+inner)
+      ctx.lineTo(x+inner, y+inner)
+      ctx.lineTo(x+inner, y+outer)
+      ctx.lineTo(x-inner, y+outer)
+      ctx.lineTo(x-inner, y+inner)
+      ctx.lineTo(x-outer, y+inner)
+      ctx.lineTo(x-outer, y-inner)
+      ctx.lineTo(x-inner, y-inner)
+      ctx.lineTo(x-inner, y-outer)
+      ctx.lineTo(x+inner, y-outer)
+      ctx.stroke()
+      ctx.fill()
     }
 
 
